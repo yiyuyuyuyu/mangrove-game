@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>守护红树林</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0b2218;
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+  overflow:hidden;
+  height:100vh;
+  color:#e8f5e9;
+}
+#startScreen{
+  position:absolute;
+  inset:0;
+  background:rgba(11,34,24,0.96);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:20;
+  text-align:center;
+  padding:20px;
+}
+#startScreen h1{
+  color:#86efac;
+  font-size:32px;
+  margin-bottom:12px;
+}
+#startScreen p{
+  opacity:0.85;
+  max-width:460px;
+  line-height:1.7;
+  margin-bottom:12px;
+  font-size:15px;
+}
+#startBtn{
+  margin-top:24px;
+  padding:14px 36px;
+  border:none;
+  border-radius:999px;
+  background:#22c55e;
+  color:#052e16;
+  font-size:17px;
+  cursor:pointer;
+}
+#hud{
+  display:none;
+  position:fixed;
+  top:16px;
+  left:16px;
+  right:16px;
+  z-index:10;
+  display:flex;
+  justify-content:space-between;
+  font-size:20px;
+}
+#gameBox{
+  width:100vw;
+  height:100vh;
+  position:relative;
+  background:linear-gradient(#143828,#071810);
+  display:none;
+}
+.trash{
+  width:48px;
+  height:48px;
+  position:absolute;
+  cursor:pointer;
+  font-size:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  transition: transform 0.15s;
+}
+.trash:active{
+  transform:scale(0.85);
+}
+#overBox{
+  display:none;
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.82);
+  z-index:30;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  padding:24px;
+}
+#overBox h2{
+  color:#86efac;
+  font-size:28px;
+  margin-bottom:12px;
+}
+#comment{
+  font-size:18px;
+  margin:10px 0;
+  color:#bef264;
+}
+#tips{
+  max-width:440px;
+  line-height:1.7;
+  opacity:0.85;
+  margin:14px 0 24px;
+}
+#restartBtn{
+  padding:12px 28px;
+  border:none;
+  border-radius:999px;
+  background:#22c55e;
+  color:#052e16;
+  font-size:16px;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+<div id="startScreen">
+  <h1>🌊 守护红树林</h1>
+  <p>海漂垃圾正漂向红树林！</p >
+  <p>点击漂来的垃圾把它们捡起来，60秒内尽可能多清理。</p >
+  <button id="startBtn">开始清理</button>
+</div>
+
+<div id="hud" style="display:none">
+  <div>分数：<span id="scoreVal">0</span></div>
+  <div>⏱️ <span id="timerVal">60</span></div>
+</div>
+
+<div id="gameBox"></div>
+
+<div id="overBox">
+  <h2>时间到！</h2>
+  <p>本次清理得分：<span id="finalScore">0</span></p >
+  <p id="comment"></p >
+  <p id="tips">红树林是海岸卫士，减少塑料垃圾，一起守护海上森林。</p >
+  <button id="restartBtn">再来一局</button>
+</div>
+
+<script>
+const startScreen = document.getElementById('startScreen');
+const gameBox = document.getElementById('gameBox');
+const hud = document.getElementById('hud');
+const scoreVal = document.getElementById('scoreVal');
+const timerVal = document.getElementById('timerVal');
+const overBox = document.getElementById('overBox');
+const finalScore = document.getElementById('finalScore');
+const commentDom = document.getElementById('comment');
+const startBtn = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+
+let score = 0;
+let time = 60;
+let timer = null;
+let spawnTimer = null;
+const trashList = ["🥤","🛍️","🥫","🧴","🍶"];
+
+function createTrash(){
+  const t = document.createElement('div');
+  t.className = "trash";
+  t.innerText = trashList[Math.floor(Math.random()*trashList.length)];
+  const maxX = window.innerWidth - 60;
+  const maxY = window.innerHeight - 100;
+  t.style.left = Math.random()*maxX + "px";
+  t.style.top = Math.random()*maxY + "px";
+  t.onclick = ()=>{
+    t.remove();
+    score++;
+    scoreVal.innerText = score;
+  }
+  gameBox.appendChild(t);
+}
+
+function startGame(){
+  score = 0;
+  time = 60;
+  scoreVal.innerText = 0;
+  timerVal.innerText = 60;
+  gameBox.innerHTML = "";
+  startScreen.style.display = "none";
+  overBox.style.display = "none";
+  hud.style.display = "flex";
+  gameBox.style.display = "block";
+
+  spawnTimer = setInterval(createTrash,1100);
+  timer = setInterval(()=>{
+    time--;
+    timerVal.innerText = time;
+    if(time <= 0){
+      gameOver();
+    }
+  },1000);
+}
+
+function gameOver(){
+  clearInterval(timer);
+  clearInterval(spawnTimer);
+  hud.style.display = "none";
+  finalScore.innerText = score;
+  // 根据分数给评价
+  if(score >=25){
+    commentDom.innerText = "太棒啦！你是红树林守护者✨";
+  }else if(score >=12){
+    commentDom.innerText = "做得不错，继续保护滩涂！";
+  }else{
+    commentDom.innerText = "加油，红树林还需要你的帮助";
+  }
+  overBox.style.display = "flex";
+}
+
+startBtn.onclick = startGame;
+restartBtn.onclick = startGame;
+</script>
+</body>
+</html>
